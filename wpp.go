@@ -21,6 +21,16 @@ type Company struct {
 
 func main() {
 	flag.Parse()
+
+	loadScripts()
+
+	http.HandleFunc("/", html)
+	http.HandleFunc("/api", api)
+
+	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
+func loadScripts() {
 	scriptNames, err := ioutil.ReadDir("lua")
 
 	if err != nil {
@@ -38,11 +48,6 @@ func main() {
 		log.Println("loaded script: ", scriptName)
 		scripts[scriptName] = redis.NewScript(0, string(scriptData))
 	}
-
-	http.HandleFunc("/", html)
-	http.HandleFunc("/api", api)
-
-	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
 func html(w http.ResponseWriter, r *http.Request) {
@@ -59,11 +64,11 @@ func api(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	companies := make([]*Company, 0)
+	companies := make([]*Company, 0, len(data))
 
-	for len(data) > 0 {
+	for _, companyData := range data {
 		company := &Company{}
-		data, _ = redis.Scan(data, &company.Name, &company.Website, &company.Description)
+		redis.ScanStruct(companyData.([]interface{}), company)
 		companies = append(companies, company)
 	}
 
