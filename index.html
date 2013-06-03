@@ -16,6 +16,10 @@
 		header {
 			margin-bottom: 20px;
 		}
+
+		.company-tools > li {
+			display: inline;
+		}
 	</style>
 </head>
 
@@ -60,15 +64,19 @@
 				</div>
 			</div>
 
-			<div class="span9">
+			<div class="span9" ng-controller="CompanyListController">
 				<div class="row-fluid">
-					<select name="tags" id="tags" style="width:100%" multiple="multiple" data-placeholder="Filter by Tags (ex: python, rails, ios)"></select>
+					<select ui-select2 ng-model="tools" style="width:100%" multiple="multiple" data-placeholder="Filter by Tags (ex: python, rails, ios)">
+						<option value="python">python</option>
+						<option value="ruby">ruby</option>
+						<option value="javascript">javascript</option>
+					</select>
 				</div>
 
 				<hr>
 
-				<ul class="unstyled" ng-controller="CompanyListController">
-					<li class="media" ng-repeat="company in companies">
+				<ul class="unstyled">
+					<li class="media company" ng-repeat="company in companies | hasTool:tools">
 						<div class="pull-left">
 							<img src="//lorempixel.com/85/85/" class="media-object">
 						</div>
@@ -81,17 +89,9 @@
 
 							<p>{{company.description}}</p>
 
-							<ul class="unstyled">
-								<li>
-									<a href="#" class="btn btn-small">django</a>
-									<a href="#" class="btn btn-small">python</a>
-									<a href="#" class="btn btn-small">java</a>
-									<a href="#" class="btn btn-small">ios</a>
-									<a href="#" class="btn btn-small">web</a>
-									<a href="#" class="btn btn-small">objective-c</a>
-									<a href="#" class="btn btn-small">javascript</a>
-									<a href="#" class="btn btn-small">hbase</a>
-									<a href="#" class="btn btn-small">postgresql</a>
+							<ul class="unstyled company-tools company-languages">
+								<li ng-repeat="language in company.languages">
+									<a href="#" class="btn btn-small" ng-click="tools.push(language)">{{language}}</a>
 								</li>
 							</ul>
 						</div>
@@ -107,9 +107,21 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/select2/3.4.0/select2.min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular-resource.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.2.0/ui-bootstrap.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui/0.4.0/angular-ui.min.js"></script>
 
 	<script type="text/javascript">
-		wpp = angular.module('wpp', ['ngResource']);
+		wpp = angular.module('wpp', ['ngResource', 'ui.directives']);
+
+		wpp.filter('hasTool', function(){
+			return function(input, tools) {
+				if (!tools.length) return input;
+
+				return _.filter(input, function(company) {
+					return !!_.filter(company.languages, function(t){ return $.inArray(t, tools) >= -1; }).length;
+				});
+			}
+		})
 
 		wpp.factory('Company', ['$resource', function($resource){
 			return $resource('/api/companies');
@@ -123,6 +135,7 @@
 
 		wpp.controller('CompanyListController', ['$scope', 'Company', function($scope, Company){
 			$scope.companies = Company.query();
+			$scope.tools = [];
 		}]);
 
 		wpp.controller('LanguageListController', ['$scope', 'Language', function($scope, Language){

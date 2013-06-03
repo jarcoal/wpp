@@ -14,9 +14,10 @@ var pool = &redis.Pool{MaxIdle: 3, Dial: func() (redis.Conn, error) { return red
 var scripts = make(map[string]*redis.Script)
 
 type Company struct {
-	Name        string `redis:"name" json:"name"`
-	Website     string `redis:"website" json:"website"`
-	Description string `redis:"description" json:"description"`
+	Name        string   `redis:"name" json:"name"`
+	Website     string   `redis:"website" json:"website"`
+	Description string   `redis:"description" json:"description"`
+	Languages   []string `redis:"languages" json:"languages"`
 }
 
 type Tool struct {
@@ -83,7 +84,10 @@ func companyListHandler(w http.ResponseWriter, r *http.Request) {
 
 	for _, companyData := range data {
 		company := &Company{}
-		redis.ScanStruct(companyData.([]interface{}), company)
+
+		redis.ScanStruct(companyData.([]interface{})[0].([]interface{}), company)
+		company.Languages, _ = redis.Strings(companyData.([]interface{})[1], nil)
+
 		companies = append(companies, company)
 	}
 
