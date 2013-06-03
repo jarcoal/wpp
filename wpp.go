@@ -24,8 +24,8 @@ func main() {
 
 	loadScripts()
 
-	http.HandleFunc("/", html)
-	http.HandleFunc("/api", api)
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/api/companies", companyListHandler)
 
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
@@ -50,11 +50,16 @@ func loadScripts() {
 	}
 }
 
-func html(w http.ResponseWriter, r *http.Request) {
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	if r.RequestURI != "/" {
+		http.Redirect(w, r, "/", 301)
+		return
+	}
+
 	http.ServeFile(w, r, "index.html")
 }
 
-func api(w http.ResponseWriter, r *http.Request) {
+func companyListHandler(w http.ResponseWriter, r *http.Request) {
 	conn := pool.Get()
 
 	data, err := redis.Values(scripts["get_companies.lua"].Do(conn))
