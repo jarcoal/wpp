@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="wpp">
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
@@ -42,32 +42,14 @@
 				</div>
 
 				<div class="well" style="padding: 10px 0;">
-					<ul class="nav nav-list">
+					<ul class="nav nav-list" ng-controller="LanguageListController">
 						<li class="nav-header">Languages</li>
-						<li>
+						<li ng-repeat="language in languages">
 							<a href="#">
-								<span>Javascript</span>
-								<span class="badge pull-right">105</span>
+								<span>{{language.name}}</span>
+								<span class="badge pull-right">{{language.count}}</span>
 							</a>
 						</li>
-						
-						<li>
-							<a href="#">
-								<span>Ruby</span>
-								<span class="badge pull-right">47</span>
-							</a>
-						</li>
-
-						<li>
-							<a href="#">
-								<span>Python</span>
-								<span class="badge pull-right">30</span>
-							</a>
-						</li>
-
-						<li><a href="#">Objective C</a></li>
-						<li><a href="#">Lua</a></li>
-						<li><a href="#">Go</a></li>
 
 						<li class="nav-header">Frameworks</li>
 
@@ -85,19 +67,19 @@
 
 				<hr>
 
-				<ul class="unstyled">
-					<li class="media">
+				<ul class="unstyled" ng-controller="CompanyListController">
+					<li class="media" ng-repeat="company in companies">
 						<div class="pull-left">
-							<img src="//lorempixel.com/85/84/" class="media-object">
+							<img src="//lorempixel.com/85/85/" class="media-object">
 						</div>
 
 						<div class="media-body">
 							<h4 class="media-heading">
-								<span>Urban Airship</span>
-								<small><a href="http://urbanairship.com/" target="_blank" class="muted">http://urbanairship.com/</a></small>
+								<span>{{company.name}}</span>
+								<small><a href="{{company.website}}" target="_blank" class="muted">{{company.website}}</a></small>
 							</h4>
 
-							<p>Veggies sunt bona vobis, proinde vos postulo esse magis rock melon peanut gourd garlic cauliflower mung bean.</p>
+							<p>{{company.description}}</p>
 
 							<ul class="unstyled">
 								<li>
@@ -114,31 +96,6 @@
 							</ul>
 						</div>
 					</li>
-
-					<li class="media">
-						<div class="pull-left">
-							<img src="//lorempixel.com/85/85/" class="media-object">
-						</div>
-
-						<div class="media-body">
-							<h4 class="media-heading">
-								<span>Cloudability</span>
-								<small><a href="https://cloudability.com/" target="_blank" class="muted">https://cloudability.com/</a></small>
-							</h4>
-
-							<p>Veggies sunt bona vobis, proinde vos postulo esse magis rock melon peanut gourd garlic cauliflower mung bean.</p>
-
-							<ul class="unstyled">
-								<li>
-									<a href="#" class="btn btn-small">ruby</a>
-									<a href="#" class="btn btn-small">rails</a>
-									<a href="#" class="btn btn-small">javascript</a>
-									<a href="#" class="btn btn-small">go</a>
-									<a href="#" class="btn btn-small">web</a>
-								</li>
-							</ul>
-						</div>
-					</li>
 				</ul>
 			</div>
 		</div>
@@ -148,11 +105,30 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.1/jquery.min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/select2/3.4.0/select2.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular-resource.min.js"></script>
 
 	<script type="text/javascript">
-		$(function(){
-			$('#tags').select2()
+		wpp = angular.module('wpp', ['ngResource']);
+
+		wpp.factory('Company', ['$resource', function($resource){
+			return $resource('/api/companies');
+		}]);
+
+		_.each({ 'languages': 'Language', 'frameworks': 'Framework', 'datastores': 'Datastore' }, function(val, key){
+			wpp.factory(val, ['$resource', function($resource){
+				return $resource('/api/'+key);
+			}]);
 		});
+
+		wpp.controller('CompanyListController', ['$scope', 'Company', function($scope, Company){
+			$scope.companies = Company.query();
+		}]);
+
+		wpp.controller('LanguageListController', ['$scope', 'Language', function($scope, Language){
+			$scope.languages = Language.query();
+		}]);
+
 	</script>
 </body>
 </html>
