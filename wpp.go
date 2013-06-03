@@ -19,6 +19,11 @@ type Company struct {
 	Description string `redis:"description" json:"description"`
 }
 
+type Tool struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
 func main() {
 	flag.Parse()
 
@@ -26,6 +31,10 @@ func main() {
 
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/api/companies", companyListHandler)
+	http.HandleFunc("/api/languages", toolListHandler("languages"))
+	http.HandleFunc("/api/frameworks", toolListHandler("frameworks"))
+	http.HandleFunc("/api/platforms", toolListHandler("platforms"))
+	http.HandleFunc("/api/datastores", toolListHandler("datastores"))
 
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
@@ -46,7 +55,7 @@ func loadScripts() {
 		}
 
 		log.Println("loaded script: ", scriptName)
-		scripts[scriptName] = redis.NewScript(0, string(scriptData))
+		scripts[scriptName] = redis.NewScript(-1, string(scriptData))
 	}
 }
 
@@ -61,8 +70,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func companyListHandler(w http.ResponseWriter, r *http.Request) {
 	conn := pool.Get()
+	defer conn.Close()
 
-	data, err := redis.Values(scripts["get_companies.lua"].Do(conn))
+	data, err := redis.Values(scripts["get_companies.lua"].Do(conn, 0))
 	if err != nil {
 		log.Print("failed to get companies: ", err)
 		w.WriteHeader(500)
@@ -86,4 +96,36 @@ func companyListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(companiesJSON)
+}
+
+func toolListHandler(kind string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn := pool.Get()
+		defer conn.Close()
+
+		data, err := redis.Values(scripts["get_tools.lua"].Do(conn, 1, kind))
+		if err != nil {
+			log.Print("failed to get tools: ", err)
+			w.WriteHeader(500)
+			return
+		}
+
+		tools := make([]*Tool, 0, len(data)/2)
+
+		for len(data) > 0 {
+			tool := &Tool{}
+			data, _ = redis.Scan(data, &tool.Name, &tool.Count)
+			tools = append(tools, tool)
+		}
+
+		toolsJSON, err := json.Marshal(tools)
+
+		if err != nil {
+			log.Print("failed to serialize tools: ", err)
+			w.WriteHeader(500)
+			return
+		}
+
+		w.Write(toolsJSON)
+	}
 }

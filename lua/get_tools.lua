@@ -1,0 +1,1 @@
+return redis.call('zrange', KEYS[1], 0, -1, 'WITHSCORES')
