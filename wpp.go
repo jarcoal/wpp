@@ -31,11 +31,7 @@ func main() {
 	loadScripts()
 
 	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/api/companies", companyListHandler)
-	http.HandleFunc("/api/languages", toolListHandler("languages"))
-	http.HandleFunc("/api/frameworks", toolListHandler("frameworks"))
-	http.HandleFunc("/api/platforms", toolListHandler("platforms"))
-	http.HandleFunc("/api/datastores", toolListHandler("datastores"))
+	http.HandleFunc("/api", companyListHandler)
 
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
@@ -100,36 +96,4 @@ func companyListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(companiesJSON)
-}
-
-func toolListHandler(kind string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		conn := pool.Get()
-		defer conn.Close()
-
-		data, err := redis.Values(scripts["get_tools.lua"].Do(conn, 1, kind))
-		if err != nil {
-			log.Print("failed to get tools: ", err)
-			w.WriteHeader(500)
-			return
-		}
-
-		tools := make([]*Tool, 0, len(data)/2)
-
-		for len(data) > 0 {
-			tool := &Tool{}
-			data, _ = redis.Scan(data, &tool.Name, &tool.Count)
-			tools = append(tools, tool)
-		}
-
-		toolsJSON, err := json.Marshal(tools)
-
-		if err != nil {
-			log.Print("failed to serialize tools: ", err)
-			w.WriteHeader(500)
-			return
-		}
-
-		w.Write(toolsJSON)
-	}
 }
