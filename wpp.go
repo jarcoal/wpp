@@ -18,6 +18,7 @@ type Company struct {
 	Website     string   `redis:"website" json:"website"`
 	Description string   `redis:"description" json:"description"`
 	Languages   []string `redis:"languages" json:"languages"`
+	Frameworks  []string `redis:"frameworks" json:"frameworks"`
 }
 
 type Tool struct {
@@ -81,8 +82,12 @@ func companyListHandler(w http.ResponseWriter, r *http.Request) {
 	for _, companyData := range data {
 		company := &Company{}
 
+		//get the key/val data about the company
 		redis.ScanStruct(companyData.([]interface{})[0].([]interface{}), company)
+
+		//get the tools
 		company.Languages, _ = redis.Strings(companyData.([]interface{})[1], nil)
+		company.Frameworks, _ = redis.Strings(companyData.([]interface{})[2], nil)
 
 		companies = append(companies, company)
 	}
