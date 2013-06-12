@@ -46,15 +46,15 @@
 				</div>
 
 				<div class="well" style="padding: 10px 0;">
-					<ul class="nav nav-list" ng-controller="LanguageListController">
+					<ul class="nav nav-list" ng-controller="LanguageController">
 						<li class="nav-header">Languages</li>
-						<li ng-repeat="language in languages">
+						<li ng-repeat="language in languages | orderBy:'-count'">
 							<a href="#">
 								<span>{{language.name}}</span>
 								<span class="badge pull-right">{{language.count}}</span>
 							</a>
 						</li>
-
+						
 						<li class="nav-header">Frameworks</li>
 
 						<li class="nav-header">Platforms</li>
@@ -64,7 +64,7 @@
 				</div>
 			</div>
 
-			<div class="span9" ng-controller="CompanyListController">
+			<div class="span9" ng-controller="ListController">
 				<div class="row-fluid">
 					<select ui-select2 ng-model="tools" style="width:100%" multiple="multiple" data-placeholder="Filter by Tags (ex: python, rails, ios)">
 						<option value="python">python</option>
@@ -118,29 +118,42 @@
 				if (!tools.length) return input;
 
 				return _.filter(input, function(company) {
-					return !!_.filter(company.languages, function(t){ return $.inArray(t, tools) >= -1; }).length;
+					return !!_.filter(company.languages, function(t){ return $.inArray(t, tools) > -1; }).length;
 				});
 			}
 		})
 
+		//company model
 		wpp.factory('Company', ['$resource', function($resource){
-			return $resource('/api/companies');
+			return $resource('/api');
 		}]);
 
-		_.each({ 'languages': 'Language', 'frameworks': 'Framework', 'datastores': 'Datastore' }, function(val, key){
-			wpp.factory(val, ['$resource', function($resource){
-				return $resource('/api/'+key);
-			}]);
-		});
-
-		wpp.controller('CompanyListController', ['$scope', 'Company', function($scope, Company){
-			$scope.companies = Company.query();
-			$scope.tools = [];
+		//singleton fetch of company model
+		wpp.factory('Companies', ['Company', function(Company){
+			return Company.query();
 		}]);
 
-		wpp.controller('LanguageListController', ['$scope', 'Language', function($scope, Language){
-			$scope.languages = Language.query();
+		wpp.controller('ListController', ['$scope', '$location', 'Companies', function($scope, $location, Companies){
+			$scope.companies = Companies;
+			try { $scope.tools = $location.absUrl().split('#/')[1].split('+') }
+			catch(e){ $scope.tools = []; };
 		}]);
+
+		wpp.controller('LanguageController', ['$scope', 'Companies', function($scope, Companies){
+			$scope.languages = Companies.$then(function(){
+				var languages = {};
+
+				_.each(Companies, function(company) {
+					_.each(company.languages, function(language) {
+						if (!languages[language]) languages[language] = 0;
+						languages[language]++;
+					});
+				});
+
+				$scope.languages = _.map(languages, function(val, key){ return { name: key, count: val }; });
+			});
+		}]);
+
 
 	</script>
 </body>
