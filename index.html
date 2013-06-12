@@ -45,21 +45,15 @@
 
 				</div>
 
-				<div class="well" style="padding: 10px 0;">
-					<ul class="nav nav-list" ng-controller="LanguageController">
-						<li class="nav-header">Languages</li>
-						<li ng-repeat="language in languages | orderBy:'-count'">
+				<div class="well" style="padding: 10px 0;" ng-controller="ToolController">
+					<ul class="nav nav-list" ng-repeat="(name, toolList) in tools">
+						<li class="nav-header">{{name}}</li>
+						<li ng-repeat="tool in toolList | orderBy:'-count'">
 							<a href="#">
-								<span>{{language.name}}</span>
-								<span class="badge pull-right">{{language.count}}</span>
+								<span>{{tool.name}}</span>
+								<span class="badge pull-right">{{tool.count}}</span>
 							</a>
 						</li>
-						
-						<li class="nav-header">Frameworks</li>
-
-						<li class="nav-header">Platforms</li>
-						<li class="nav-header">Datastores</li>
-						<li class="nav-header">Version Control</li>
 					</ul>
 				</div>
 			</div>
@@ -139,18 +133,29 @@
 			catch(e){ $scope.tools = []; };
 		}]);
 
-		wpp.controller('LanguageController', ['$scope', 'Companies', function($scope, Companies){
-			$scope.languages = Companies.$then(function(){
-				var languages = {};
+		wpp.controller('ToolController', ['$scope', 'Companies', function($scope, Companies){
+			$scope.tools = {
+				languages: [],
+				frameworks: [],
+			};
 
-				_.each(Companies, function(company) {
-					_.each(company.languages, function(language) {
-						if (!languages[language]) languages[language] = 0;
-						languages[language]++;
+			Companies.$then(function(){
+				//loop through each tool type
+				_.each($scope.tools, function(toolList, toolType){
+					var tools = {};
+
+					//each company
+					_.each(Companies, function(company) {
+						//aggregate tool count
+						_.each(company[toolType], function(tool) {
+							if (!tools[tool]) tools[tool] = 0;
+							tools[tool]++;
+						});
 					});
-				});
 
-				$scope.languages = _.map(languages, function(val, key){ return { name: key, count: val }; });
+					//more template-friendly format
+					$scope.tools[toolType] = _.map(tools, function(val, key){ return { name: key, count: val }; });
+				});
 			});
 		}]);
 
