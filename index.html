@@ -60,17 +60,17 @@
 
 			<div class="span9" ng-controller="ListController">
 				<div class="row-fluid">
-					<select ui-select2 ng-model="tools" style="width:100%" multiple="multiple" data-placeholder="Filter by Tags (ex: python, rails, ios)">
-						<option value="python">python</option>
-						<option value="ruby">ruby</option>
-						<option value="javascript">javascript</option>
+					<select ui-select2 ng-model="select.filters" ng-controller="ToolController" style="width:100%" multiple="multiple" data-placeholder="Filter by Tags (ex: python, rails, ios)">
+						<optgroup ng-repeat="(name, toolList) in tools" label="{{name}}">
+							<option ng-repeat="tool in toolList | orderBy:'-count'" value="{{tool.name}}">{{tool.name}}</option>
+						</optgroup>
 					</select>
 				</div>
 
 				<hr>
 
 				<ul class="unstyled">
-					<li class="media company" ng-repeat="company in companies | hasTool:tools">
+					<li class="media company" ng-repeat="company in companies | hasTool:select.filters">
 						<div class="pull-left">
 							<img src="//lorempixel.com/85/85/" class="media-object">
 						</div>
@@ -83,9 +83,13 @@
 
 							<p>{{company.description}}</p>
 
-							<ul class="unstyled company-tools company-languages">
+							<ul class="unstyled company-tools">
 								<li ng-repeat="language in company.languages">
-									<a href="#" class="btn btn-small" ng-click="tools.push(language)">{{language}}</a>
+									<a href="#" class="btn btn-small" ng-click="select.filters.push(language)">{{language}}</a>
+								</li>
+
+								<li ng-repeat="framework in company.frameworks">
+									<a href="#" class="btn btn-small" ng-click="select.filters.push(framework)">{{framework}}</a>
 								</li>
 							</ul>
 						</div>
@@ -129,8 +133,8 @@
 
 		wpp.controller('ListController', ['$scope', '$location', 'Companies', function($scope, $location, Companies){
 			$scope.companies = Companies;
-			try { $scope.tools = $location.absUrl().split('#/')[1].split('+') }
-			catch(e){ $scope.tools = []; };
+			try { $scope.select = { filters: $location.absUrl().split('#/')[1].split('+') }; }
+			catch(e){ $scope.select = { filters: [] }; }
 		}]);
 
 		wpp.controller('ToolController', ['$scope', 'Companies', function($scope, Companies){
